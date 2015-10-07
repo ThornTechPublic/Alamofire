@@ -33,7 +33,7 @@ private struct TestCertificates {
         class Bundle {}
         let filePath = NSBundle(forClass: Bundle.self).pathForResource(fileName, ofType: "cer")!
         let data = NSData(contentsOfFile: filePath)!
-        let certificate = SecCertificateCreateWithData(nil, data).takeRetainedValue()
+        let certificate = SecCertificateCreateWithData(nil, data)!
 
         return certificate
     }
@@ -47,12 +47,11 @@ private struct TestPublicKeys {
     static let Leaf = TestPublicKeys.publicKeyForCertificate(TestCertificates.Leaf)
 
     static func publicKeyForCertificate(certificate: SecCertificate) -> SecKey {
-        let policy = SecPolicyCreateBasicX509().takeRetainedValue()
-        var unmanagedTrust: Unmanaged<SecTrust>?
-        let trustCreationStatus = SecTrustCreateWithCertificates(certificate, policy, &unmanagedTrust)
+        let policy = SecPolicyCreateBasicX509()
+        var trust: SecTrust?
+        SecTrustCreateWithCertificates(certificate, policy, &trust)
 
-        let trust = unmanagedTrust!.takeRetainedValue()
-        let publicKey = SecTrustCopyPublicKey(trust).takeRetainedValue()
+        let publicKey = SecTrustCopyPublicKey(trust!)!
 
         return publicKey
     }
@@ -91,7 +90,12 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorServerCertificateUntrusted, "error should be NSURLErrorServerCertificateUntrusted")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorServerCertificateUntrusted, "code should be untrusted server certficate")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 
     // MARK: Server Trust Policy - Perform Default Tests
@@ -118,7 +122,12 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorCancelled, "error should be NSURLErrorCancelled")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorCancelled, "code should be cancelled")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 
     // MARK: Server Trust Policy - Certificate Pinning Tests
@@ -149,7 +158,12 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorCancelled, "error should be NSURLErrorCancelled")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorCancelled, "code should be cancelled")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 
     func testThatExpiredCertificateRequestFailsWhenPinningAllCertificatesWithCertificateChainValidation() {
@@ -178,7 +192,12 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorCancelled, "error should be NSURLErrorCancelled")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorCancelled, "code should be cancelled")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 
     func testThatExpiredCertificateRequestSucceedsWhenPinningLeafCertificateWithoutCertificateChainValidation() {
@@ -260,7 +279,7 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
             }
 
         waitForExpectationsWithTimeout(defaultTimeout, handler: nil)
-        
+
         // Then
         XCTAssertNil(error, "error should be nil")
     }
@@ -293,7 +312,12 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorCancelled, "error should be NSURLErrorCancelled")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorCancelled, "code should be cancelled")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 
     func testThatExpiredCertificateRequestSucceedsWhenPinningLeafPublicKeyWithoutCertificateChainValidation() {
@@ -466,6 +490,11 @@ class TLSEvaluationExpiredLeafCertificateTestCase: BaseTestCase {
 
         // Then
         XCTAssertNotNil(error, "error should not be nil")
-        XCTAssertEqual(error?.code ?? -1, NSURLErrorCancelled, "error should be NSURLErrorCancelled")
+
+        if let code = error?.code {
+            XCTAssertEqual(code, NSURLErrorCancelled, "code should be cancelled")
+        } else {
+            XCTFail("error should be an NSError")
+        }
     }
 }
